@@ -1,0 +1,19 @@
+// Prority based state machine
+// States can execute simultaneously, unless they need to override any state of lower priority
+// States from high to low priority:
+    [-] Die
+    [X] TakeDamage
+    [-] Attack
+    [X] Jump
+    [X] Run
+    [-] Look
+    [X] Gravity
+// Any of these states can, if the conditions specified by them so declare it, 
+//  stop any states below from executing during part or the entirety of their execution time.
+// States can also include a whitelist of lower-priority states they can never override, for instance gravity could still apply when attacking
+
+// States' shared methods
+    - bool ExecuteAndContinue(Parameters containing the orders/inputs/state coming from their owner)
+        // returns true if no override is declared, false if yes, in which case, override all lower-priority states not included in the list
+    - OnStateOverriden()
+    - GetWhitelistedStates()

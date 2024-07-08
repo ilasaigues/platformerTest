@@ -5,18 +5,15 @@ using Unity.VisualScripting;
 using UnityEngine;
 
 /// <summary>
-/// ScriptableObject value container to avoid dependencies.
-/// Objects can subscribe to this object's OnValueChanged function
-/// or read it's value directly to know what it is, without knowing
-/// who changed it or who handles changing it. It does open the door to
-/// multiple objects being able to change it, but like a static variable,
-/// it's up to the coding standards and etiquette to /not/ do that.
+/// ScriptableObject value container to avoid direct object dependencies.
+/// Other objects can subscribe to this object's OnValueChanged function or read it's value directly to know what it is, without knowing
+/// who changed it or who handles changing it. It does open the door to multiple sources being able to change it, but, like a static variable,
+/// it's up to the coding standards and etiquette to <b>not</b> do that.
 /// </summary>
 /// <typeparam name="T">Type that the object will contain</typeparam>
 [System.Serializable]
 public abstract class ScriptableVariable<T> : BaseScriptableVariable, IEquatable<ScriptableVariable<T>>
 {
-
     public override object BaseValue
     {
         get
@@ -61,7 +58,7 @@ public abstract class ScriptableVariable<T> : BaseScriptableVariable, IEquatable
 
     public bool SetValue(T newValue)
     {
-        var changeValue = newValue.Equals(_value);
+        var changeValue = !newValue.Equals(_value);
 
         if (changeValue)
         {
@@ -82,8 +79,6 @@ public abstract class ScriptableVariable<T> : BaseScriptableVariable, IEquatable
     {
         return other == this;
     }
-
-
 
     public delegate void ValueChangedDelegate(T newValue);
     public ValueChangedDelegate OnValueChanged
@@ -106,7 +101,26 @@ public abstract class ScriptableVariable<T> : BaseScriptableVariable, IEquatable
         }
     }
     private event ValueChangedWithHistoryDelegate _onValueChangedWithHistory;
+
+    public void SubscribeToValueChanged(ValueChangedDelegate listener)
+    {
+        _onValueChanged += listener;
+    }
+    public void UnSubscribeToValueChanged(ValueChangedDelegate listener)
+    {
+        _onValueChanged -= listener;
+    }
+
+    public void SubscribeToValueChangedWithHistory(ValueChangedWithHistoryDelegate listener)
+    {
+        _onValueChangedWithHistory += listener;
+    }
+    public void UnSubscribeToValueChangedWithHistory(ValueChangedWithHistoryDelegate listener)
+    {
+        _onValueChangedWithHistory -= listener;
+    }
 }
+
 
 
 
