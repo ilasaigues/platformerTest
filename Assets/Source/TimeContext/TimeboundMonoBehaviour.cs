@@ -7,7 +7,7 @@ using UniRx;
 /// </summary>
 public abstract class TimeboundMonoBehaviour : MonoBehaviour
 {
-    [SerializeField] private ScriptableTimeContext _timeContext;
+    [SerializeField] protected ScriptableTimeContext _timeContext;
 
     protected float DeltaTime => _timeContext ? _timeContext.DeltaTime : Time.deltaTime;
     protected float FixedDeltaTime => _timeContext ? _timeContext.FixedDeltaTime : Time.fixedDeltaTime;
@@ -17,6 +17,7 @@ public abstract class TimeboundMonoBehaviour : MonoBehaviour
         if (_timeContext != null)
         {
             _timeContext.OnPause += OnPause;
+            _timeContext.SubscribeToValueChanged(OnSpeedChanged);
         }
     }
 
@@ -32,6 +33,8 @@ public abstract class TimeboundMonoBehaviour : MonoBehaviour
         if (_timeContext != null)
         {
             _timeContext.OnPause -= OnPause;
+            _timeContext.UnSubscribeToValueChanged(OnSpeedChanged);
+
         }
     }
 
@@ -41,6 +44,11 @@ public abstract class TimeboundMonoBehaviour : MonoBehaviour
     }
 
     protected virtual void OnPause(bool pause)
+    {
+        // no op
+    }
+
+    protected virtual void OnSpeedChanged(float speed)
     {
         // no op
     }

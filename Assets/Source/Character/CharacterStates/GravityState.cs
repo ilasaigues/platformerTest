@@ -6,11 +6,13 @@ using UnityEngine;
 using Zenject;
 using InputType = CharacterStateRunner.CharacterStateInputType;
 
-[RequireComponent(typeof(CharacterMovementController))]
 public class GravityState : BaseCharacterState
 {
     [SerializeField]
     private float _gravity;
+
+    [SerializeField]
+    private ScriptableEvent _onCharacterGrounded;
 
     private float _currentVelocity;
 
@@ -19,15 +21,20 @@ public class GravityState : BaseCharacterState
     [Inject]
     CharacterMovementController _movementController;
 
+    [Inject]
+    Animator _animator;
+
     public override bool ExecuteAndContinue(float deltaTime, Dictionary<InputType, object> controlParameters)
     {
         Vector2 halfExtents = (Vector2)controlParameters[InputType.HalfExtents];
+        Vector2 colliderOffset = (Vector2)controlParameters[InputType.ColliderOffset];
         if (_grounded)
         {
             _currentVelocity = 0;
-            if (CheckForGround(deltaTime, halfExtents).collider == null)
+            if (CheckForGround(deltaTime, colliderOffset, halfExtents).collider == null)
             {
                 _grounded = false;
+                _animator.SetBool("Grounded", false);
             }
         }
         else
@@ -35,13 +42,16 @@ public class GravityState : BaseCharacterState
             RaycastHit2D rch = default;
             if (_currentVelocity < 0)
             {
-                rch = CheckForGround(deltaTime, halfExtents);
+                rch = CheckForGround(deltaTime, colliderOffset, halfExtents);
             }
             if (rch.collider != null)
             {
+                _animator.SetBool("BeginJumpPeak", false);
+                _animator.SetBool("Grounded", true);
                 _grounded = true;
+                _onCharacterGrounded?.Raise();
                 _currentVelocity = 0;
-                var distanceToGround = Mathf.Abs(rch.point.y - transform.position.y) - halfExtents.y;
+                var distanceToGround = Mathf.Abs(rch.point.y - (transform.position.y + colliderOffset.y)) - halfExtents.y;
                 _movementController.AddMovement(distanceToGround * Vector2.down);
             }
             else
@@ -59,13 +69,13 @@ public class GravityState : BaseCharacterState
         _grounded = false;
     }
 
-    RaycastHit2D CheckForGround(float deltaTime, Vector2 halfExtents)
+    RaycastHit2D CheckForGround(float deltaTime, Vector2 colliderOffset, Vector2 halfExtents)
     {
         float distanceThisFrame = Mathf.Abs(_currentVelocity * deltaTime);
         var downVector = Vector2.down * distanceThisFrame;
         Vector2[] points = new Vector2[]{
-            (Vector2)transform.position + downVector + halfExtents.x * Vector2.right*0.9f,
-            (Vector2)transform.position + downVector - halfExtents.x * Vector2.right*0.9f,
+            (Vector2)transform.position + colliderOffset + downVector + 0.9f * halfExtents.x * Vector2.right,
+            (Vector2)transform.position + colliderOffset + downVector - 0.9f * halfExtents.x * Vector2.right,
         };
 
         if (_grounded)

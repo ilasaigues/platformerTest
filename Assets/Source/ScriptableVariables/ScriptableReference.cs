@@ -32,6 +32,17 @@ public abstract class ScriptableReference<T, U> : BaseScriptableReference where 
     public T Value
     {
         get { return _usage == 0 || _reference == null ? _localValue : _reference.Value; }
+        set
+        {
+            if (_usage == 0 || _reference == null)
+            {
+                _localValue = value;
+            }
+            else
+            {
+                _reference.Value = value;
+            }
+        }
     }
 
     public static implicit operator T(ScriptableReference<T, U> reference)

@@ -4,30 +4,28 @@ using UnityEngine;
 
 [System.Serializable]
 [CreateAssetMenu(menuName = "Scriptables/Time Context", fileName = "newTimeContext")]
-public class ScriptableTimeContext : ScriptableObject, ITimeContext
+public class ScriptableTimeContext : ScriptableFloat, ITimeContext
 {
 
     [SerializeField]
-    private float _deltaTimeMultiplier;
-    [SerializeField]
-    private float _fixedDeltaTimeMultiplier;
-
     private bool _paused;
 
-    public float DeltaTime => _paused ? 0 : _deltaTimeMultiplier * Time.deltaTime;
+    public bool Paused => _paused;
 
-    public float FixedDeltaTime => _paused ? 0 : _deltaTimeMultiplier * Time.fixedDeltaTime;
+    public float DeltaTime => _paused ? 0 : Value * Time.deltaTime;
+
+    public float FixedDeltaTime => _paused ? 0 : Value * Time.fixedDeltaTime;
 
     public System.Action<bool> OnPause = new System.Action<bool>(p => { });
 
     public void SetDeltaTimeMultiplier(float multiplier)
     {
-        _deltaTimeMultiplier = multiplier;
+        Value = multiplier;
     }
 
     public void SetFixedDeltaTimeMultiplier(float multiplier)
     {
-        _fixedDeltaTimeMultiplier = multiplier;
+        Value = multiplier;
     }
 
     public void TogglePause()

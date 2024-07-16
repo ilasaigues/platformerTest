@@ -4,7 +4,6 @@ using UnityEngine;
 using Zenject;
 using InputType = CharacterStateRunner.CharacterStateInputType;
 
-[RequireComponent(typeof(CharacterMovementController))]
 public class HorizontalMovementState : BaseCharacterState
 {
     [SerializeField]
@@ -18,6 +17,9 @@ public class HorizontalMovementState : BaseCharacterState
     [Inject]
     CharacterMovementController _movementController;
 
+    [Inject]
+    Animator _animator;
+
     public override bool ExecuteAndContinue(float deltaTime, Dictionary<InputType, object> controlParameters)
     {
         if (controlParameters.TryGetValue(InputType.HorizontalAxis, out var horizontalAxis))
@@ -27,6 +29,7 @@ public class HorizontalMovementState : BaseCharacterState
             {
                 _horizontalVelocity = Mathf.Clamp(_horizontalVelocity, -_maxVelocity, _maxVelocity);
             }
+            _animator.SetBool("Running", true);
         }
         else
         {
@@ -34,17 +37,19 @@ public class HorizontalMovementState : BaseCharacterState
             if (Mathf.Abs(deceleration) > Mathf.Abs(_horizontalVelocity))
             {
                 _horizontalVelocity = 0;
+                _animator.SetBool("Running", false);
+
             }
             else
             {
                 _horizontalVelocity -= deceleration;
             }
         }
-        var wallHit = CheckForWall(deltaTime, (Vector2)controlParameters[InputType.HalfExtents]);
+        var wallHit = CheckForWall(deltaTime, (Vector2)controlParameters[InputType.ColliderOffset], (Vector2)controlParameters[InputType.HalfExtents]);
         if (wallHit.collider != null)
         {
             var hitPointVector = wallHit.point - (Vector2)transform.position;
-            _horizontalVelocity = hitPointVector.magnitude - ((Vector2)controlParameters[InputType.HalfExtents]).x;
+            _horizontalVelocity = hitPointVector.x - Mathf.Sign(hitPointVector.x) * ((Vector2)controlParameters[InputType.HalfExtents]).x;
         }
         if (_horizontalVelocity != 0)
         {
@@ -58,13 +63,13 @@ public class HorizontalMovementState : BaseCharacterState
         _horizontalVelocity = 0;
     }
 
-    RaycastHit2D CheckForWall(float deltaTime, Vector2 halfExtents)
+    RaycastHit2D CheckForWall(float deltaTime, Vector2 colliderOffset, Vector2 halfExtents)
     {
         float distanceThisFrame = _horizontalVelocity * deltaTime;
         var sideVector = Vector2.right * distanceThisFrame;
         Vector2[] points = new Vector2[]{
-            (Vector2)transform.position + sideVector + halfExtents.y * Vector2.up*0.9f,
-            (Vector2)transform.position + sideVector - halfExtents.y * Vector2.up*0.9f,
+            (Vector2)transform.position + colliderOffset + sideVector + 0.9f * halfExtents.y * Vector2.up,
+            (Vector2)transform.position + colliderOffset + sideVector - 0.9f * halfExtents.y * Vector2.up,
         };
 
         foreach (var point in points)

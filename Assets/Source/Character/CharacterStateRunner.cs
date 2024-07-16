@@ -4,15 +4,17 @@ using System.Linq;
 using UnityEngine;
 using Zenject;
 
-[RequireComponent(typeof(CharacterMovementController))]
 public class CharacterStateRunner : TimeboundMonoBehaviour
 {
     public enum CharacterStateInputType
     {
         HalfExtents,
+        ColliderOffset,
         HorizontalAxis,
         JumpCommand,
         DamageSourcePosition,
+        Dead,
+        Attack,
     }
 
     [Inject]

@@ -1,40 +1,28 @@
 using System.Collections;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using Unity.VisualScripting;
 using UnityEngine;
+using Zenject;
 using InputType = CharacterStateRunner.CharacterStateInputType;
-[RequireComponent(typeof(CharacterStateRunner))]
-public class PlayerController : MonoBehaviour
+public class PlayerController : BaseCharacter
 {
 
-    [Header("Shared Variables")]
     [SerializeField]
-    float _halfHeight = 0.5f;
-    [SerializeField]
-    float _halfWidth = 0.5f;
+    private ScriptableEvent _onPlayerDeath;
 
-    public IntReference MaxHealth;
-    public ScriptableInt CharacterHealth;
+    [Inject]
+    private SpriteRenderer _spriteRenderer;
 
-    private CharacterStateRunner _characterStateRunner;
-
-    private bool _damaged;
-    private Vector2 _damageSourcePosition;
-
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        _characterStateRunner = GetComponent<CharacterStateRunner>();
-        CharacterHealth.Value = MaxHealth;
-    }
+    private int _remainingJumps = 0;
 
     // Update is called once per frame
     void Update()
     {
         var parameters = new Dictionary<InputType, object>
         {
-            { InputType.HalfExtents, new Vector2(_halfWidth, _halfHeight) }
+            { InputType.HalfExtents, _collider2D.size/2 },
+            { InputType.ColliderOffset, _collider2D.offset},
         };
 
         var horizontalAxis = Input.GetAxis("Horizontal");
@@ -43,8 +31,9 @@ public class PlayerController : MonoBehaviour
             parameters.Add(InputType.HorizontalAxis, horizontalAxis);
         }
 
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (_remainingJumps > 0 && Input.GetKeyDown(KeyCode.Space))
         {
+            _remainingJumps = 0;
             parameters.Add(InputType.JumpCommand, true);
         }
 
@@ -55,13 +44,32 @@ public class PlayerController : MonoBehaviour
             _damageSourcePosition = Vector2.zero;
         }
 
+        if (Input.GetKeyDown(KeyCode.Z))
+        {
+            parameters.Add(InputType.Attack, _spriteRenderer.flipX ? -1 : 1);
+        }
+
+        if (!_isAlive)
+        {
+            parameters.Add(InputType.Dead, true);
+        }
+
         _characterStateRunner.RunStates(parameters);
     }
 
-    public void TakeDamage(int damage, Vector2 hazardPosition)
+    protected override void Die()
     {
-        CharacterHealth.Value -= damage;
-        _damaged = true;
-        _damageSourcePosition = hazardPosition;
+        base.Die();
+        _onPlayerDeath?.Raise();
+        UniTask.Void(async () =>
+        {
+            await UniTask.Delay(1000);
+            _spriteRenderer.enabled = false;
+        });
+    }
+
+    public void OnPlayerGrounded()
+    {
+        _remainingJumps = 1;
     }
 }

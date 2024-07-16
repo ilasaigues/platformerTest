@@ -34,14 +34,4 @@ public class ScriptableEvent : ScriptableObject
     {
         _listeners.Remove(listener);
     }
-
-    void OnEnable()
-    {
-        Debug.Log("Enable");
-    }
-
-    void OnDisable()
-    {
-        Debug.Log("Disable");
-    }
 }

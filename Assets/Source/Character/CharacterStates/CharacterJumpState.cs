@@ -13,19 +13,36 @@ public class CharacterJumpState : BaseCharacterState
     [SerializeField]
     private float _jumpGravity;
 
+    [SerializeField]
+    private float _peakGravity;
+
     private float _currentVelocity = 0;
 
     private bool _isJumping;
 
+    private bool _reachedPeak;
+
     [Inject]
     CharacterMovementController _movementController;
+
+    [Inject]
+    Animator _animator;
 
     public override bool ExecuteAndContinue(float deltaTime, Dictionary<InputType, object> controlParameters)
     {
         if (!_isJumping && controlParameters.ContainsKey(InputType.JumpCommand))
         {
+            _animator.SetBool("Grounded", false);
+            _animator.SetBool("Jump", true);
             _isJumping = true;
             _currentVelocity = _jumpPower;
+        }
+
+        if (!_reachedPeak && _currentVelocity <= 2)
+        {
+            _animator.SetBool("Jump", false);
+            _animator.SetBool("BeginJumpPeak", true);
+            _reachedPeak = true;
         }
 
         if (_currentVelocity <= 0)
@@ -42,7 +59,7 @@ public class CharacterJumpState : BaseCharacterState
                 return true;
             }
             _movementController.AddMovement(Vector2.up * _currentVelocity * deltaTime);
-            _currentVelocity += _jumpGravity * deltaTime;
+            _currentVelocity += (_reachedPeak ? _peakGravity : _jumpGravity) * deltaTime;
             return false;
         }
 
@@ -69,6 +86,6 @@ public class CharacterJumpState : BaseCharacterState
     public override void ResetState()
     {
         _currentVelocity = 0;
-        _isJumping = false;
+        _isJumping = _reachedPeak = false;
     }
 }

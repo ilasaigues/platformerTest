@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 /// <summary>
@@ -10,9 +11,9 @@ using UnityEngine;
 /// This is solved by calling a function that forcibly cleanses the list on runtime initialization.
 /// </summary>
 /// <typeparam name="T">Type of objects this list will contain</typeparam>
-public abstract class ScriptableList<T> : ScriptableObject
+public abstract class ScriptableList<T> : ScriptableObject, ISerializationCallbackReceiver
 {
-    [HideInInspector]
+    [DoNotSerialize]
     public List<T> Objects = new();
 
     public Action<T> OnObjectAdded = (obj) => { };
@@ -29,7 +30,7 @@ public abstract class ScriptableList<T> : ScriptableObject
 
     public void Remove(T obj)
     {
-        if (!Objects.Contains(obj))
+        if (Objects.Contains(obj))
         {
             Objects?.Remove(obj);
             OnObjectRemoved(obj);
@@ -41,12 +42,12 @@ public abstract class ScriptableList<T> : ScriptableObject
         Objects.Clear();
     }
 
-    [RuntimeInitializeOnLoadMethod]
-    private static void ClearOnLoad()
+    public void OnBeforeSerialize()
     {
-        foreach (ScriptableList<T> so in FindObjectsOfType<ScriptableList<T>>())
-        {
-            so.ForceClear();
-        }
+    }
+
+    public void OnAfterDeserialize()
+    {
+        ForceClear();
     }
 }
